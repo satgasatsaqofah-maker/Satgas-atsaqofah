@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <title>Satgas Transformasi Atsaqofah (Khusus Tim)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    textarea { resize: vertical; }
+    button, a, select, input, textarea { touch-action: manipulation; }
+    :focus-visible { outline: 3px solid #38bdf8; outline-offset: 3px; }
+    .note-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+    @media (prefers-reduced-motion: no-preference) {
+      .progress-fill { transition: width .3s ease; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <header class="bg-slate-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-widest">
+          RUANG KERJA INTERNAL
+        </span>
+        <span id="saveStatus" role="status" aria-live="polite"
+          class="text-xs text-slate-300">Memuat penyimpanan…</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
+        Satgas Transformasi Atsaqofah (Khusus Tim)
+      </h1>
+      <p class="mt-3 text-slate-300 max-w-3xl">
+        Satu langkah terukur untuk sekolah yang semakin baik.
+        Pantau kegiatan, lengkapi checklist, dan dokumentasikan perkembangan tim.
+      </p>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div id="storageWarning" role="alert" hidden
+      class="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800"></div>
+
+    <div class="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+      <strong>Penyimpanan lokal:</strong> perubahan langsung tersimpan di browser ini.
+      Data antarperangkat belum tersinkron. Gunakan browser dan alamat website yang sama
+      untuk melanjutkan pekerjaan, serta unduh cadangan secara berkala.
+    </div>
+
+    <div class="flex flex-wrap justify-between items-center gap-3">
+      <nav aria-label="Navigasi">
+        <a href="#home" id="backLink" hidden
+          class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-slate-100">
+          ← Kembali ke Beranda
+        </a>
+      </nav>
+      <button id="backupButton" type="button"
+        class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-slate-100">
+        ↓ Unduh Cadangan JSON
+      </button>
+    </div>
+
+    <section id="homeView" aria-labelledby="homeTitle">
+      <div class="mb-5">
+        <h2 id="homeTitle" tabindex="-1" class="text-xl font-bold">Dashboard Ketua Satgas</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Persentase dihitung dari jumlah tugas berstatus Selesai ÷ seluruh tugas.
+        </p>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-3">
+        <article class="rounded-2xl bg-slate-900 text-white p-6">
+          <p class="text-sm text-slate-300">Progress Keseluruhan</p>
+          <p id="overallPercent" class="text-4xl font-bold mt-3">0%</p>
+          <div id="overallBar" role="progressbar" aria-label="Progress keseluruhan"
+            aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+            class="mt-4 h-2 overflow-hidden rounded-full bg-slate-700">
+            <div id="overallFill" class="progress-fill h-full bg-emerald-400" style="width:0%"></div>
+          </div>
+        </article>
+        <article class="rounded-2xl border border-slate-200 bg-white p-6">
+          <p class="text-sm text-slate-500">Tugas Selesai</p>
+          <p id="overallDone" class="mt-3 text-4xl font-bold text-emerald-700">0 / 66</p>
+          <p class="mt-3 text-sm text-slate-500">Seluruh empat tim</p>
+        </article>
+        <article class="rounded-2xl border border-slate-200 bg-white p-6">
+          <p class="text-sm text-slate-500">Sedang Berjalan</p>
+          <p id="overallRunning" class="mt-3 text-4xl font-bold text-amber-600">0</p>
+          <p id="overallPending" class="mt-3 text-sm text-slate-500"></p>
+        </article>
+      </div>
+
+      <article class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <label for="chairNotes" class="block font-bold">Arahan Khusus Ketua Satgas</label>
+        <p id="chairHelp" class="mt-1 text-sm text-slate-500">
+          Tulis prioritas, keputusan, atau arahan. Otomatis disimpan setiap mengetik.
+        </p>
+        <textarea id="chairNotes" rows="4" aria-describedby="chairHelp"
+          placeholder="Contoh: Prioritaskan audit fasilitas dan finalisasi identitas sekolah minggu ini…"
+          class="mt-4 w-full rounded-xl border border-slate-300 bg-slate-50 p-4 text-sm"></textarea>
+      </article>
+
+      <div class="mt-8 mb-4">
+        <h2 class="text-xl font-bold">Daftar Tim Transformasi</h2>
+        <p class="mt-1 text-sm text-slate-500">Pilih tim untuk membuka tugas dan papan perkembangan.</p>
+      </div>
+      <div id="teamCards" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"></div>
+    </section>
+
+    <section id="detailView" hidden aria-labelledby="detailTitle">
+      <div class="rounded-2xl bg-slate-900 p-6 text-white">
+        <p class="text-xs font-semibold tracking-widest text-emerald-300">RUANG KERJA TIM</p>
+        <h2 id="detailTitle" tabindex="-1" class="mt-2 text-2xl font-bold"></h2>
+        <p id="detailSummary" class="mt-3 text-sm text-slate-300"></p>
+        <div id="detailBar" role="progressbar" aria-label="Progress tim"
+          aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+          class="mt-4 h-2 overflow-hidden rounded-full bg-slate-700">
+          <div id="detailFill" class="progress-fill h-full bg-emerald-400" style="width:0%"></div>
+        </div>
+      </div>
+
+      <article class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-200 p-5">
+          <h3 class="font-bold">Daftar Kegiatan &amp; Aksi</h3>
+          <p class="mt-1 text-sm text-slate-500">
+            Nomor mengikuti worksheet. Centang checklist untuk menandai Selesai.
+            Geser tabel ke samping pada layar kecil.
+          </p>
+        </div>
+        <div class="overflow-x-auto" tabindex="0" aria-label="Tabel tugas, dapat digeser horizontal">
+          <table class="w-full min-w-[920px] text-left text-sm">
+            <thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+              <tr>
+                <th scope="col" class="p-4">No</th>
+                <th scope="col" class="p-4">Checklist</th>
+                <th scope="col" class="p-4">Kegiatan/Aksi</th>
+                <th scope="col" class="p-4">Penanggung Jawab</th>
+                <th scope="col" class="p-4">Output/Bukti</th>
+                <th scope="col" class="p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody id="taskRows" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <h3 class="text-lg font-bold">Papan Catatan &amp; Log Perkembangan Tim</h3>
+        <p class="mt-1 text-sm text-slate-500">
+          Nama diisi oleh anggota; waktu ditambahkan otomatis. Draf juga tersimpan selama mengetik.
+        </p>
+        <form id="noteForm" class="mt-5 space-y-4">
+          <div>
+            <label for="memberName" class="block text-sm font-semibold">Nama anggota</label>
+            <input id="memberName" required maxlength="80" autocomplete="name"
+              placeholder="Nama Anda"
+              class="mt-2 w-full sm:max-w-sm rounded-lg border border-slate-300 px-3 py-2">
+          </div>
+          <div>
+            <label for="noteText" class="block text-sm font-semibold">Update / catatan baru</label>
+            <textarea id="noteText" required maxlength="10000" rows="4"
+              placeholder="Tuliskan perkembangan, kendala, atau tindak lanjut…"
+              class="mt-2 w-full rounded-lg border border-slate-300 p-3"></textarea>
+          </div>
+          <button type="submit"
+            class="rounded-lg bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800">
+            Tambahkan ke Log
+          </button>
+          <p id="noteFeedback" role="status" aria-live="polite" class="text-sm text-slate-600"></p>
+        </form>
+        <div id="noteList" class="mt-6 space-y-4"></div>
+      </article>
+    </section>
+
+    <footer class="pb-5 pt-4 text-center text-xs leading-relaxed text-slate-500">
+      Sumber kegiatan: Worksheet transformasi Atsaqafah · 4 lembar tim<br>
+      Tugas pada beberapa tim dapat beririsan sesuai worksheet.
+      Progress dihitung per entri tugas tim.
+    </footer>
+  </main>
+
+  <script>
+    "use strict";
+
+    /*
+     * Data statis worksheet.
+     * Format baris: nomor | kegiatan | penanggung jawab | output/bukti.
+     * ID penyimpanan memakai ID tim dan nomor asli; jangan ubah ID ketika
+     * memperbarui tampilan agar status yang sudah tersimpan tetap terhubung.
+     */
+    const TEAMS = [
+      {
+        id: "sarpras",
+        name: "Tim Sarpras (Sarana & Prasarana)",
+        icon: "🏫",
+        description: "Fasilitas, renovasi, dan lingkungan sekolah.",
+        data: `
+1|Audit kondisi bangunan dan fasilitas|Sarpras|Checklist fasilitas dan foto
+2|Menentukan konsep visual fasad dan interior|Branding, Sarpras|Konsep desain
+3|Penyusunan RAB renovasi final|Sarpras, Project Manager|RAB dan jadwal renovasi
+4|Pengadaan cat, material dan perlengkapan renovasi|Sarpras|Bukti pengadaan
+5|Persiapan teknis renovasi|Sarpras|Jadwal kerja renovasi
+6|Persiapan dan pengecekan lokasi renovasi|Sarpras|Checklist pekerjaan
+7|Pengecatan fasad dan bagian depan|Sarpras/vendor|Dokumentasi sebelum-sesudah
+8|Pembaruan papan nama sekolah|Sarpras, Branding|Papan nama baru
+9|Pemasangan signage utama|Sarpras|Petunjuk arah
+10|Pemeriksaan kualitas hasil renovasi|Kepala Sekolah, Sarpras|Berita acara pekerjaan
+11|Audit kondisi toilet dan tempat cuci tangan|Sarpras|Daftar perbaikan
+12|Perbaikan toilet dan sanitasi|Sarpras/vendor|Toilet layak dan bersih
+13|Penataan taman dan area hijau|Sarpras|Taman tertata
+14|Penyegaran ruang penerimaan tamu|Sarpras, Branding|Area penerimaan baru
+15|Penataan area kelas dan display karya siswa|Tim Sarpras, Guru|Ruang kelas lebih menarik
+16|Penerapan jadwal kebersihan|Kesiswaan, Sarpras|Jadwal dan checklist
+17|Evaluasi fasilitas dan pelayanan|Sarpras, Humas|Daftar perbaikan
+19|Penyusunan rencana perbaikan|Project Manager|Daftar tindak lanjut`
+      },
+      {
+        id: "branding",
+        name: "Tim Logo dan Branding",
+        icon: "🎨",
+        description: "Identitas visual dan citra baru sekolah.",
+        data: `
+1|Audit branding, media sosial dan kompetitor|Branding|Laporan citra sekolah
+2|Mendesain logo, tagline, warna dan tipografi|Branding|Alternatif desain
+3|Menentukan konsep visual fasad dan interior|Branding, Sarpras|Konsep desain
+4|Finalisasi brand guideline|Branding|Buku panduan identitas
+5|Pembuatan desain signage dan atribut|Branding|File desain final
+6|Penyegaran ruang penerimaan tamu|Sarpras, Branding|Area penerimaan baru
+7|Finalisasi seluruh identitas visual|Branding|Seluruh media baru
+8|finalisasi warna dan desain seragam Siswa dan Guru|Branding|Desain dan Anggaran`
+      },
+      {
+        id: "sdm",
+        name: "Tim SDM dan Pendidikan",
+        icon: "📚",
+        description: "Kompetensi tim dan pengalaman belajar siswa.",
+        data: `
+1|Audit kurikulum, metode belajar dan prestasi|Tim Kurikulum|Laporan akademik
+2|Menetapkan program unggulan TK, SD, SMP|Tim Kurikulum|Peta program unggulan
+3|Menyusun SOP prioritas dan job description|Kepala Sekolah, SDM|Draft SOP
+4|Menyusun kalender pelatihan guru|Tim SDM, Kurikulum|Jadwal pelatihan
+5|Menyusun kalender konten dan promosi|Marketing|Kalender konten
+7|Menyusun KPI setiap posisi|Tim SDM, Kepala Sekolah|Dokumen KPI
+8|Menetapkan job description|Tim SDM|Uraian tugas
+9|Pelatihan pembelajaran aktif|Tim Kurikulum|Sertifikat dan hasil pelatihan
+10|Pelatihan budaya kerja dan pelayanan|Tim SDM|Dokumentasi pelatihan
+11|Simulasi penerapan standar pelayanan|Humas, SDM|Hasil simulasi
+12|Coaching guru dan pegawai|Kepala Sekolah|Catatan coaching
+13|Penilaian awal kinerja|Tim SDM|Laporan kinerja
+14|Penetapan rencana pengembangan individu|Kepala Sekolah|Rencana tindak lanjut SDM
+15|Finalisasi model pembelajaran per jenjang|Koordinator Kurikulum|Panduan pembelajaran
+16|Menyusun proyek pembelajaran TK|Koordinator TK|Proyek kreativitas dan kemandirian
+17|Menyusun proyek pembelajaran SD|Koordinator SD|Proyek literasi/STEAM
+18|Menyusun proyek pembelajaran SMP|Koordinator SMP|Proyek riset/inovasi
+19|Implementasi pembelajaran aktif|Seluruh guru|Dokumentasi kelas
+20|Evaluasi hasil pembelajaran|Tim Kurikulum|Laporan hasil implementasi
+21|Publikasi program unggulan|Marketing, Kurikulum|Konten edukasi
+22|Kampanye media sosial|Marketing|Rekap jangkauan
+23|Pelaksanaan school tour/open house|Humas|Daftar calon orang tua
+24|Evaluasi prospek calon siswa|Marketing|Database prospek
+29|Finalisasi program unggulan TK, SD, SMP|Tim Kurikulum|Panduan program
+30|Pelaksanaan program kreativitas TK|Koordinator TK|Dokumentasi kegiatan
+31|Pelaksanaan proyek STEAM SD|Koordinator SD|Proyek siswa
+32|Pelaksanaan proyek inovasi SMP|Koordinator SMP|Proyek siswa
+34|Pembinaan kepemimpinan dan kewirausahaan|Kesiswaan|Program siswa
+35|Pameran hasil karya|Seluruh koordinator|Dokumentasi pameran
+36|Evaluasi pembelajaran dan SDM|Kurikulum, SDM|Laporan evaluasi
+38|Evaluasi fasilitas dan pelayanan|Sarpras, Humas|Daftar perbaikan
+39|Persiapan pameran hasil transformasi|Kurikulum, Kesiswaan|Materi pameran
+40|Pameran karya dan program unggulan|Seluruh tim|Dokumentasi`
+      },
+      {
+        id: "it",
+        name: "Tim IT dan Marketing",
+        icon: "💻",
+        description: "Digitalisasi, komunikasi, dan promosi sekolah.",
+        data: `
+3|Audit administrasi dan teknologi|IT/Operator|Laporan digitalisasi
+12|Finalisasi database siswa dan guru|IT/Operator|Database terverifikasi
+13|Penerapan absensi digital|IT/Operator|Sistem absensi
+14|Pelatihan penggunaan aplikasi|IT/Operator|Daftar peserta
+15|Pembuatan kanal komunikasi orang tua|Humas, IT|Kanal resmi
+19|Persiapan publikasi dan undangan|Humas, Marketing|Materi publikasi
+20|Pelaksanaan school tour/open house|Humas|Daftar calon orang tua`
+      }
+    ].map(team => ({
+      ...team,
+      tasks: team.data.trim().split("\n").map(line => {
+        const [no, title, owner, output] = line.split("|");
+        return { no, title, owner, output, id: `${team.id}-${no}` };
+      })
+    }));
+
+    // Koreksi output sesuai baris asli worksheet.
+    TEAMS.find(t => t.id === "sdm").tasks.find(t => t.no === "31").output =
+      "Hasil karya siswa";
+
+    const PREFIX = "atsaqofah-satgas:v1:";
+    const VALID_STATUSES = ["Belum", "Sedang Berjalan", "Selesai"];
+    const $ = id => document.getElementById(id);
+    let activeTeam = null;
+
+    // Fallback memori menjaga UI dapat digunakan jika browser menolak storage.
+    // Peringatan tetap terlihat: fallback ini tidak bertahan setelah refresh.
+    const memory = new Map();
+    const failedKeys = new Set();
+    const corruptKeys = new Set();
+    let readFailed = false;
+    let lastSaved = null;
+
+    function updateStorageMessage() {
+      const warning = $("storageWarning");
+      const problems = [];
+
+      if (failedKeys.size || readFailed) {
+        problems.push(
+          "Penyimpanan browser gagal atau tidak dapat diakses. " +
+          "Sebagian perubahan mungkin hanya tersedia selama halaman ini terbuka. " +
+          "Unduh cadangan sebelum menutup halaman dan periksa izin/kapasitas penyimpanan browser."
+        );
+      }
+
+      if (corruptKeys.size) {
+        problems.push(
+          "Ada data tersimpan yang formatnya tidak dapat dibaca. " +
+          "Data mentah tetap disertakan dalam cadangan; unduh cadangan sebelum mengedit bagian tersebut."
+        );
+      }
+
+      warning.hidden = problems.length === 0;
+      warning.textContent = problems.join(" ");
+
+      $("saveStatus").textContent = problems.length
+        ? "Periksa peringatan penyimpanan"
+        : lastSaved
+          ? "Tersimpan di browser · " + new Date(lastSaved).toLocaleTimeString("id-ID")
+          : "Penyimpanan lokal siap";
+    }
+
+    function read(key, fallback) {
+      const fullKey = PREFIX + key;
+      let raw;
+      try {
+        raw = localStorage.getItem(fullKey);
+        // Jika penulisan terakhir gagal, utamakan perubahan dalam memori.
+        if (failedKeys.has(fullKey) && memory.has(fullKey)) {
+          raw = memory.get(fullKey);
+        } else if (raw !== null) {
+          memory.set(fullKey, raw);
+        }
+      } catch {
+        readFailed = true;
+        raw = memory.get(fullKey) ?? null;
+      }
+
+      if (raw === null) return fallback;
+
+      try {
+        return JSON.parse(raw);
+      } catch {
+        corruptKeys.add(fullKey);
+        return fallback;
+      }
+    }
+
+    function write(key, value) {
+      const fullKey = PREFIX + key;
+      const raw = JSON.stringify(value);
+      memory.set(fullKey, raw);
+
+      let saved = false;
+      try {
+        localStorage.setItem(fullKey, raw);
+        failedKeys.delete(fullKey);
+        corruptKeys.delete(fullKey);
+        lastSaved = Date.now();
+        saved = true;
+      } catch {
+        failedKeys.add(fullKey);
+      }
+      updateStorageMessage();
+      return saved;
+    }
+
+    function readText(key) {
+      const value = read(key, "");
+      return typeof value === "string" ? value : "";
+    }
+
+    // Semua teks dinamis di-escape sebelum dimasukkan ke HTML.
+    function escapeHTML(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;",
+        '"': "&quot;", "'": "&#39;"
+      }[char]));
+    }
+
+    function taskStatus(task) {
+      const value = read("status:" + task.id, "Belum");
+      return VALID_STATUSES.includes(value) ? value : "Belum";
+    }
+
+    function stats(tasks) {
+      let done = 0;
+      let running = 0;
+      tasks.forEach(task => {
+        const status = taskStatus(task);
+        if (status === "Selesai") done++;
+        if (status === "Sedang Berjalan") running++;
+      });
+
+      return {
+        total: tasks.length,
+        done,
+        running,
+        pending: tasks.length - done - running,
+        percent: tasks.length ? Math.round(done / tasks.length * 100) : 0
+      };
+    }
+
+    function setProgress(barId, fillId, percent) {
+      $(barId).setAttribute("aria-valuenow", String(percent));
+      $(fillId).style.width = percent + "%";
+    }
+
+    function renderSummary() {
+      const overall = stats(TEAMS.flatMap(team => team.tasks));
+
+      $("overallPercent").textContent = overall.percent + "%";
+      $("overallDone").textContent = `${overall.done} / ${overall.total}`;
+      $("overallRunning").textContent = overall.running;
+      $("overallPending").textContent = `${overall.pending} tugas belum dimulai`;
+      setProgress("overallBar", "overallFill", overall.percent);
+
+      $("teamCards").innerHTML = TEAMS.map(team => {
+        const s = stats(team.tasks);
+        return `
+          <a href="#team/${team.id}"
+            class="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-emerald-500 hover:shadow-md">
+            <span class="text-3xl" aria-hidden="true">${team.icon}</span>
+            <h3 class="mt-4 font-bold">${escapeHTML(team.name)}</h3>
+            <p class="mt-2 text-sm text-slate-500">${escapeHTML(team.description)}</p>
+            <div class="mt-5 flex justify-between text-sm">
+              <span>${s.done}/${s.total} selesai</span>
+              <strong class="text-emerald-700">${s.percent}%</strong>
+            </div>
+            <div role="progressbar" aria-label="Progress ${escapeHTML(team.name)}"
+              aria-valuemin="0" aria-valuemax="100" aria-valuenow="${s.percent}"
+              class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div class="progress-fill h-full bg-emerald-600" style="width:${s.percent}%"></div>
+            </div>
+            <p class="mt-4 text-sm font-semibold text-emerald-700">Buka ruang tim →</p>
+          </a>`;
+      }).join("");
+
+      if (activeTeam) {
+        const s = stats(activeTeam.tasks);
+        $("detailSummary").textContent =
+          `${s.percent}% selesai · ${s.done}/${s.total} tugas selesai · ` +
+          `${s.running} berjalan · ${s.pending} belum dimulai`;
+        setProgress("detailBar", "detailFill", s.percent);
+      }
+    }
+
+    function statusClass(status) {
+      if (status === "Selesai") return "bg-emerald-50 text-emerald-800 border-emerald-200";
+      if (status === "Sedang Berjalan") return "bg-amber-50 text-amber-900 border-amber-200";
+      return "bg-slate-50 text-slate-700 border-slate-300";
+    }
+
+    function renderTasks() {
+      $("taskRows").innerHTML = activeTeam.tasks.map(task => {
+        const status = taskStatus(task);
+        return `
+          <tr data-task="${task.id}" class="${status === "Selesai" ? "bg-emerald-50/40" : ""}">
+            <td class="p-4 align-top text-slate-500">${task.no}</td>
+            <td class="p-4 align-top">
+              <input type="checkbox" data-action="check" data-id="${task.id}"
+                aria-label="Tandai selesai: ${escapeHTML(task.title)}"
+                ${status === "Selesai" ? "checked" : ""}
+                class="h-5 w-5 cursor-pointer accent-emerald-700">
+            </td>
+            <td class="p-4 align-top font-medium">${escapeHTML(task.title)}</td>
+            <td class="p-4 align-top text-slate-600">${escapeHTML(task.owner)}</td>
+            <td class="p-4 align-top text-slate-600">${escapeHTML(task.output)}</td>
+            <td class="p-4 align-top">
+              <select data-action="status" data-id="${task.id}"
+                aria-label="Status: ${escapeHTML(task.title)}"
+                class="w-44 rounded-lg border px-2 py-2 text-sm ${statusClass(status)}">
+                ${VALID_STATUSES.map(value =>
+                  `<option value="${value}" ${value === status ? "selected" : ""}>${value}</option>`
+                ).join("")}
+              </select>
+            </td>
+          </tr>`;
+      }).join("");
+    }
+
+    function readLogEntries() {
+      const entries = new Map();
+
+      // Setiap log disimpan pada key terpisah agar penambahan pada tab lain
+      // tidak menimpa seluruh daftar catatan.
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(PREFIX + "log:")) {
+            const raw = localStorage.getItem(key);
+            if (raw !== null) entries.set(key, raw);
+          }
+        }
+      } catch {
+        readFailed = true;
+      }
+
+      for (const [key, raw] of memory) {
+        if (key.startsWith(PREFIX + "log:") &&
+            (!entries.has(key) || failedKeys.has(key))) {
+          entries.set(key, raw);
+        }
+      }
+
+      const notes = [];
+      for (const [key, raw] of entries) {
+        try {
+          const note = JSON.parse(raw);
+          if (note &&
+              typeof note.team === "string" &&
+              typeof note.name === "string" &&
+              typeof note.text === "string" &&
+              typeof note.time === "string" &&
+              Number.isFinite(Date.parse(note.time))) {
+            notes.push(note);
+          } else {
+            corruptKeys.add(key);
+          }
+        } catch {
+          corruptKeys.add(key);
+        }
+      }
+      return notes;
+    }
+
+    function renderNotes() {
+      if (!activeTeam) return;
+
+      const notes = readLogEntries()
+        .filter(note => note.team === activeTeam.id)
+        .sort((a, b) => Date.parse(b.time) - Date.parse(a.time));
+
+      $("noteList").innerHTML = notes.length
+        ? notes.map(note => `
+          <article class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div class="flex flex-wrap justify-between gap-2">
+              <h4 class="font-semibold">${escapeHTML(note.name)}</h4>
+              <time datetime="${escapeHTML(note.time)}" class="text-xs text-slate-500">
+                ${escapeHTML(new Date(note.time).toLocaleString("id-ID", {
+                  dateStyle: "medium", timeStyle: "short"
+                }))}
+              </time>
+            </div>
+            <p class="note-text mt-3 text-sm leading-relaxed">${escapeHTML(note.text)}</p>
+          </article>`).join("")
+        : `<p class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+             Belum ada log perkembangan. Tambahkan update pertama tim Anda.
+           </p>`;
+
+      updateStorageMessage();
+    }
+
+    function route(moveFocus = true) {
+      const match = /^#team\/([a-z]+)$/.exec(location.hash);
+      activeTeam = match ? TEAMS.find(team => team.id === match[1]) || null : null;
+
+      $("homeView").hidden = Boolean(activeTeam);
+      $("detailView").hidden = !activeTeam;
+      $("backLink").hidden = !activeTeam;
+
+      if (activeTeam) {
+        $("detailTitle").textContent = activeTeam.name;
+        $("memberName").value = readText("memberName");
+        $("noteText").value = readText("draft:" + activeTeam.id);
+        $("noteFeedback").textContent = "";
+        renderTasks();
+        renderNotes();
+      } else {
+        $("chairNotes").value = readText("chairNotes");
+      }
+
+      renderSummary();
+      updateStorageMessage();
+
+      if (moveFocus) {
+        window.scrollTo({ top: 0, behavior: "instant" });
+        $(activeTeam ? "detailTitle" : "homeTitle").focus({ preventScroll: true });
+      }
+    }
+
+    $("chairNotes").addEventListener("input", event => {
+      write("chairNotes", event.target.value);
+    });
+
+    $("memberName").addEventListener("input", event => {
+      write("memberName", event.target.value);
+    });
+
+    $("noteText").addEventListener("input", event => {
+      if (activeTeam) write("draft:" + activeTeam.id, event.target.value);
+    });
+
+    $("taskRows").addEventListener("change", event => {
+      const control = event.target;
+      if (!activeTeam || !control.matches("[data-action]")) return;
+
+      const task = activeTeam.tasks.find(item => item.id === control.dataset.id);
+      if (!task) return;
+
+      const status = control.dataset.action === "check"
+        ? (control.checked ? "Selesai" : "Belum")
+        : control.value;
+
+      if (!VALID_STATUSES.includes(status)) return;
+      write("status:" + task.id, status);
+
+      // Perbarui baris yang sama agar fokus keyboard tetap pada kontrol.
+      const row = control.closest("tr");
+      row.querySelector('input[type="checkbox"]').checked = status === "Selesai";
+      const select = row.querySelector("select");
+      select.value = status;
+      select.className = "w-44 rounded-lg border px-2 py-2 text-sm " + statusClass(status);
+      row.classList.toggle("bg-emerald-50/40", status === "Selesai");
+      renderSummary();
+    });
+
+    $("noteForm").addEventListener("submit", event => {
+      event.preventDefault();
+      if (!activeTeam) return;
+
+      const name = $("memberName").value.trim();
+      const text = $("noteText").value.trim();
+
+      if (!name || !text) {
+        $("noteFeedback").textContent = "Isi nama dan catatan terlebih dahulu.";
+        (!name ? $("memberName") : $("noteText")).focus();
+        return;
+      }
+
+      const id = window.crypto && typeof window.crypto.randomUUID === "function"
+        ? window.crypto.randomUUID()
+        : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+
+      const saved = write("log:" + id, {
+        id,
+        team: activeTeam.id,
+        name,
+        text,
+        time: new Date().toISOString()
+      });
+
+      if (saved) {
+        write("draft:" + activeTeam.id, "");
+        $("noteText").value = "";
+        $("noteFeedback").textContent = "Catatan ditambahkan dan tersimpan di browser.";
+      } else {
+        // Pertahankan draf agar pengguna bisa mencoba lagi atau mengunduhnya.
+        $("noteFeedback").textContent =
+          "Catatan tampil sementara. Penyimpanan gagal; draf dipertahankan. Unduh cadangan.";
+      }
+
+      renderNotes();
+    });
+
+    $("backupButton").addEventListener("click", () => {
+      const rawStorage = {};
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(PREFIX)) {
+            rawStorage[key] = localStorage.getItem(key);
+          }
+        }
+      } catch {
+        readFailed = true;
+      }
+
+      // Sertakan perubahan dalam memori dan data mentah yang belum dapat dibaca.
+      for (const [key, value] of memory) rawStorage[key] = value;
+
+      const payload = {
+        application: "Satgas Transformasi Atsaqofah (Khusus Tim)",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        rawStorage
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json"
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `cadangan-satgas-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      updateStorageMessage();
+    });
+
+    // Sinkronisasi antartab untuk origin/browser yang sama, bukan antarperangkat.
+    window.addEventListener("storage", event => {
+      if (event.key !== null && !event.key.startsWith(PREFIX)) return;
+
+      if (event.key === null) {
+        for (const key of memory.keys()) {
+          if (!failedKeys.has(key)) memory.delete(key);
+        }
+      } else if (!failedKeys.has(event.key)) {
+        if (event.newValue === null) memory.delete(event.key);
+        else memory.set(event.key, event.newValue);
+      }
+
+      renderSummary();
+
+      if (activeTeam) {
+        if (event.key === null || event.key.startsWith(PREFIX + "status:")) {
+          renderTasks();
+        }
+        if (event.key === null || event.key.startsWith(PREFIX + "log:")) {
+          renderNotes();
+        }
+      }
+
+      // Jangan mengganti teks yang sedang diketik pada tab aktif.
+      if (document.activeElement !== $("chairNotes")) {
+        $("chairNotes").value = readText("chairNotes");
+      }
+      if (document.activeElement !== $("memberName")) {
+        $("memberName").value = readText("memberName");
+      }
+      if (activeTeam && document.activeElement !== $("noteText")) {
+        $("noteText").value = readText("draft:" + activeTeam.id);
+      }
+      updateStorageMessage();
+    });
+
+    window.addEventListener("hashchange", () => route());
+    route(false);
+  </script>
+</body>
+</html>
